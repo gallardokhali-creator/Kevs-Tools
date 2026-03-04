@@ -1,0 +1,12 @@
+local Lighting = game:GetService("Lighting")
+local RunService = game:GetService("RunService")
+
+local function updateLighting()
+    Lighting.Brightness = 2
+    Lighting.ClockTime = 14
+    Lighting.FogEnd = 9e9
+    Lighting.GlobalShadows = false
+    Lighting.OutdoorAmbient = Color3.fromRGB(128, 128, 128)
+end
+
+RunService.RenderStepped:Connect(updateLighting)
