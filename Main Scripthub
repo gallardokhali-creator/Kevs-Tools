@@ -1,0 +1,66 @@
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+
+local Window = Rayfield:CreateWindow({
+    Name = "Kev ScriptHub",
+    LoadingTitle = "Kev's Scripthub Loading...",
+    LoadingSubtitle = "by 707",
+    ConfigurationSaving = {
+        Enabled = false
+    },
+    Discord = {
+        Enabled = false
+    },
+    KeySystem = false
+})
+
+local MainTab = Window:CreateTab("Skripts", 4483362458)
+local MainSection = MainTab:CreateSection("Kev's Scripts heehaw")
+
+MainTab:CreateButton({
+    Name = "Aimbot [The aim key is E]",
+    Callback = function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/gallardokhali-creator/Kevs-Tools/refs/heads/main/Aimbot%20E"))()
+    end,
+})
+
+MainTab:CreateButton({
+    Name = "Aimbot [The aim key is RIGHTCLICK]",
+    Callback = function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/gallardokhali-creator/Kevs-Tools/refs/heads/main/Aimbot%20Rightlcick"))()
+    end,
+})
+
+MainTab:CreateButton({
+    Name = "Head Hitbox [Makes people head hitbox bigger]",
+    Callback = function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/gallardokhali-creator/Kevs-Tools/refs/heads/main/Headhitbox"))()
+    end,
+})
+
+MainTab:CreateButton({
+    Name = "Fullbright & Nofog",
+    Callback = function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/gallardokhali-creator/Kevs-Tools/refs/heads/main/Nofog%20%26%20Fullbright"))()
+    end,
+})
+
+MainTab:CreateButton({
+    Name = "Infinity Yield [Admin Commands]",
+    Callback = function()
+        loadstring(game:HttpGet('https://raw.githubusercontent.com/EdgeIY/infiniteyield/master/source'))()
+    end,
+})
+
+MainTab:CreateButton({
+    Name = "Waypoints",
+    Callback = function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/gallardokhali-creator/Waypoints/refs/heads/main/Script"))()
+    end,
+})
+
+Rayfield:Notify({
+    Title = "Kev ScriptHub",
+    Content = "All scripts loaded!",
+    Duration = 5,
+    Image = 4483362458,
+})
