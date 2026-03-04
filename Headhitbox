@@ -1,0 +1,51 @@
+_G.HeadSize = 10
+_G.Transparency = 1
+_G.Color = BrickColor.new("Hot pink")
+_G.Disabled = false
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local LocalPlayer = Players.LocalPlayer
+
+local function resetPart(part)
+    if not part then return end
+    if part.Name == "Head" then
+        part.Size = Vector3.new(2, 1, 1)
+    else
+        part.Size = Vector3.new(2, 2, 1)
+    end
+    part.Transparency = 0
+    part.CanCollide = true
+end
+
+local function expandPart(part)
+    if not part then return end
+    local size = (part.Name == "Head") and _G.HeadSize or (_G.HeadSize / 1.5)
+    part.Size = Vector3.new(size, size, size)
+    part.Transparency = _G.Transparency
+    part.CanCollide = false
+    if _G.Transparency == 0 then
+        part.BrickColor = _G.Color
+        part.Material = Enum.Material.Neon
+    end
+end
+
+RunService.RenderStepped:Connect(function()
+    if _G.Disabled then return end
+    for _, player in ipairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer and player.Character then
+            local char = player.Character
+            local hum = char:FindFirstChildOfClass("Humanoid")
+            local head = char:FindFirstChild("Head")
+            local root = char:FindFirstChild("HumanoidRootPart") or char:FindFirstChild("Torso")
+
+            if hum and (hum.Sit or char:FindFirstChild("SeatWeld", true)) then
+                resetPart(head)
+                resetPart(root)
+            else
+                expandPart(head)
+                expandPart(root)
+            end
+        end
+    end
+end)
