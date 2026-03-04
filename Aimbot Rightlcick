@@ -1,0 +1,507 @@
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UIS = game:GetService("UserInputService")
+local Camera = workspace.CurrentCamera
+local LocalPlayer = Players.LocalPlayer
+local Mouse = LocalPlayer:GetMouse()
+
+local aimKey = Enum.UserInputType.MouseButton2
+local aimPart = "Head"
+local aimRadius = 150
+local teamCheckEnabled = false 
+local wallCheckEnabled = false 
+local whitelistedTeams = "000,000" 
+local aimingEnabled = false
+local espEnabled = false
+local aiming = false
+local noclip = false
+local walkspeedEnabled = false
+local normalWalkSpeed = 16
+local infJumpEnabled = false
+local autoClickEnabled = false
+local opKillerEnabled = false
+
+local espTable = {}
+local lockedTarget = nil
+
+local function isEnemy(player)
+    if not player.Team or not LocalPlayer.Team then
+        return true 
+    end
+    
+    local isWhitelisted = false
+    local teamNames = {}
+    for teamName in whitelistedTeams:gmatch("[^,]+") do
+        teamNames[teamName:lower()] = true
+    end
+    
+    if player.Team and teamNames[player.Team.Name:lower()] then
+        isWhitelisted = true
+    end
+    
+    if teamCheckEnabled then
+        return true 
+    else
+        return player.Team ~= LocalPlayer.Team and not isWhitelisted
+    end
+end
+
+local function validateTarget(player)
+    if player and player.Character and player.Character:FindFirstChild(aimPart) then
+        local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
+        if humanoid and humanoid.Health > 0 then
+            local part = player.Character[aimPart]
+            local screenPos, onScreen = Camera:WorldToViewportPoint(part.Position)
+            if onScreen then
+                local distance = (Vector2.new(screenPos.X, screenPos.Y) - Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)).Magnitude
+                if distance <= aimRadius then
+                    if wallCheckEnabled then
+                        return true
+                    else
+                        local rayOrigin = Camera.CFrame.Position
+                        local rayDirection = (part.Position - rayOrigin).Unit * (part.Position - rayOrigin).Magnitude
+                        local raycastParams = RaycastParams.new()
+                        raycastParams.FilterDescendantsInstances = {LocalPlayer.Character, player.Character}
+                        raycastParams.FilterType = Enum.RaycastFilterType.Exclude
+                        local raycastResult = workspace:Raycast(rayOrigin, rayDirection, raycastParams)
+                        
+                        return not raycastResult or raycastResult.Instance:IsDescendantOf(player.Character)
+                    end
+                end
+            end
+        end
+    end
+    return false
+end
+
+local function getClosestTarget()
+    local closestPlayer = nil
+    local shortestDistance = aimRadius
+
+    for _, player in pairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer and isEnemy(player) then
+            if validateTarget(player) then
+                local part = player.Character[aimPart]
+                local screenPos = Camera:WorldToViewportPoint(part.Position)
+                local distance = (Vector2.new(screenPos.X, screenPos.Y) - Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)).Magnitude
+                if distance < shortestDistance then
+                    shortestDistance = distance
+                    closestPlayer = player
+                end
+            end
+        end
+    end
+    return closestPlayer
+end
+
+UIS.InputBegan:Connect(function(input)
+    if input.UserInputType == aimKey then 
+        aiming = true 
+    end
+end)
+
+UIS.InputEnded:Connect(function(input)
+    if input.UserInputType == aimKey then 
+        aiming = false 
+        lockedTarget = nil
+    end
+end)
+
+local function createESP(player)
+    if player == LocalPlayer then return end
+
+    local box = Drawing.new("Square")
+    box.Visible = false
+    box.Color = player.Team and player.Team.TeamColor.Color or Color3.new(1, 1, 1)
+    box.Thickness = 1
+    box.Transparency = 1
+    box.Filled = false
+
+    local nameText = Drawing.new("Text")
+    nameText.Visible = false
+    nameText.Size = 14
+    nameText.Color = Color3.new(1, 1, 1)
+    nameText.Center = true
+    nameText.Outline = true
+    nameText.OutlineColor = Color3.new(0, 0, 0)
+    nameText.OutlineThickness = 0.2
+    nameText.Font = 2
+
+    espTable[player] = {Box = box, Name = nameText}
+end
+
+local function removeESP(player)
+    if espTable[player] then
+        espTable[player].Box:Remove()
+        espTable[player].Name:Remove()
+        espTable[player] = nil
+    end
+end
+
+for _, player in pairs(Players:GetPlayers()) do createESP(player) end
+Players.PlayerAdded:Connect(createESP)
+Players.PlayerRemoving:Connect(removeESP)
+
+local noclipConnection
+local noclipParts = {} 
+
+local function restoreCollision()
+    for part, originalCanCollide in pairs(noclipParts) do
+        if part and part.Parent then
+            part.CanCollide = originalCanCollide
+        end
+    end
+    noclipParts = {} 
+end
+
+local function toggleNoclip(enabled)
+    noclip = enabled
+    if noclipConnection then
+        noclipConnection:Disconnect()
+        noclipConnection = nil
+    end
+    
+    if noclip and LocalPlayer.Character then
+        noclipParts = {}
+        noclipConnection = RunService.Stepped:Connect(function()
+            if LocalPlayer.Character then
+                for _, part in pairs(LocalPlayer.Character:GetDescendants()) do
+                    if part:IsA("BasePart") and part.CanCollide then
+                        noclipParts[part] = part.CanCollide
+                        part.CanCollide = false
+                    end
+                end
+            end
+        end)
+    else
+        restoreCollision()
+    end
+end
+
+LocalPlayer.CharacterAdded:Connect(function()
+    if noclip then
+        task.wait(0.1) 
+        toggleNoclip(false) 
+        toggleNoclip(true) 
+    end
+end)
+
+UIS.JumpRequest:Connect(function()
+    if infJumpEnabled and LocalPlayer.Character then
+        local humanoid = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+        if humanoid then humanoid:ChangeState(Enum.HumanoidStateType.Jumping) end
+    end
+end)
+
+local autoClickConnection
+local autoClickTimer = 0
+local autoClickInterval = 0.1
+
+local function toggleAutoClick(enabled)
+    if enabled then
+        autoClickTimer = 0
+        autoClickConnection = RunService.Heartbeat:Connect(function(dt)
+            autoClickTimer = autoClickTimer + dt
+            if UIS:IsKeyDown(Enum.KeyCode.LeftControl) and autoClickTimer >= autoClickInterval then
+                autoClickTimer = 0
+                mouse1press()
+                mouse1release()
+            end
+        end)
+    else
+        if autoClickConnection then
+            autoClickConnection:Disconnect()
+            autoClickConnection = nil
+        end
+    end
+end
+
+local function toggleWalkspeed(enabled)
+    local humanoid = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+    if humanoid then
+        humanoid.WalkSpeed = enabled and 35 or normalWalkSpeed
+    end
+end
+
+local opKillerConnection
+local currentOP
+local flashstepAngle = 0
+local flashstepRadius = 3
+local flashstepSpeed = 20
+
+local function findNextOP()
+    for _, player in pairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") and isEnemy(player) then
+            local hum = player.Character:FindFirstChildOfClass("Humanoid")
+            if hum and hum.Health > 0 then return player end
+        end
+    end
+end
+
+local function startOPKiller()
+    currentOP = findNextOP()
+    if not currentOP then return end
+    flashstepAngle = 0
+
+    opKillerConnection = RunService.Heartbeat:Connect(function(dt)
+        if not currentOP or not currentOP.Character then
+            currentOP = findNextOP()
+            if not currentOP then
+                opKillerEnabled = false
+                if opKillerConnection then opKillerConnection:Disconnect() opKillerConnection = nil end
+                return
+            end
+        end
+
+        local hrp = currentOP.Character:FindFirstChild("HumanoidRootPart")
+        if hrp and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+            flashstepAngle = flashstepAngle + flashstepSpeed * dt
+            local offsetX = math.cos(flashstepAngle) * flashstepRadius
+            local offsetZ = math.sin(flashstepAngle) * flashstepRadius
+            local targetPos = hrp.Position
+            local newPos = targetPos + Vector3.new(offsetX, 3, offsetZ)
+            LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(newPos, targetPos)
+            LocalPlayer.Character.Humanoid.PlatformStand = true
+        end
+    end)
+end
+
+local function stopOPKiller()
+    if opKillerConnection then opKillerConnection:Disconnect() opKillerConnection = nil end
+    if LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then
+        LocalPlayer.Character.Humanoid.PlatformStand = false
+    end
+end
+
+RunService.RenderStepped:Connect(function()
+    if aiming and aimingEnabled then
+        if lockedTarget and not validateTarget(lockedTarget) then
+            lockedTarget = nil
+        end
+
+        if not lockedTarget then
+            lockedTarget = getClosestTarget()
+        end
+
+        if lockedTarget and lockedTarget.Character then
+            local targetPart = lockedTarget.Character:FindFirstChild(aimPart)
+            if targetPart then
+                Camera.CFrame = CFrame.new(Camera.CFrame.Position, targetPart.Position)
+            end
+        end
+    else
+        lockedTarget = nil
+    end
+
+    if espEnabled then
+        for player, visuals in pairs(espTable) do
+            local char = player.Character
+            local hum = char and char:FindFirstChildOfClass("Humanoid")
+            
+            if char and hum and hum.Health > 0 and char:FindFirstChild("HumanoidRootPart") and char:FindFirstChild("Head") then
+                local hrp = char.HumanoidRootPart
+                local head = char.Head
+                local pos, onScreen = Camera:WorldToViewportPoint(hrp.Position)
+                local headPos = Camera:WorldToViewportPoint(head.Position + Vector3.new(0, 1.6, 0))
+
+                if onScreen then
+                    local dist = (Camera.CFrame.Position - hrp.Position).Magnitude
+                    local scale = 1 / dist * 100
+                    local width, height = 50 * scale, 100 * scale
+
+                    visuals.Box.Size = Vector2.new(width, height)
+                    visuals.Box.Position = Vector2.new(pos.X - width / 2, pos.Y - height / 2)
+                    visuals.Box.Visible = true
+                    visuals.Box.Color = player.Team and player.Team.TeamColor.Color or Color3.new(1, 1, 1)
+
+                    visuals.Name.Position = Vector2.new(pos.X, headPos.Y - 10)
+                    visuals.Name.Text = player.Name
+                    visuals.Name.Size = math.clamp(16 * scale, 10, 14)
+                    visuals.Name.Visible = true
+                else
+                    visuals.Box.Visible = false
+                    visuals.Name.Visible = false
+                end
+            else
+                visuals.Box.Visible = false
+                visuals.Name.Visible = false
+            end
+        end
+    else
+        for _, visuals in pairs(espTable) do
+            visuals.Box.Visible = false
+            visuals.Name.Visible = false
+        end
+    end
+end)
+
+local ScreenGui = Instance.new("ScreenGui", game.CoreGui)
+ScreenGui.Name = "UniversalAimbot"
+
+local Frame = Instance.new("Frame", ScreenGui)
+Frame.Size = UDim2.new(0, 240, 0, 420)
+Frame.Position = UDim2.new(0.5, -120, 0.5, -210)
+Frame.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
+Frame.BackgroundTransparency = 0.1
+Frame.BorderSizePixel = 0
+Frame.Active = true
+Frame.Draggable = true
+
+local mainCorner = Instance.new("UICorner", Frame)
+mainCorner.CornerRadius = UDim.new(0, 12)
+
+local mainStroke = Instance.new("UIStroke", Frame)
+mainStroke.Thickness = 2
+mainStroke.Color = Color3.fromRGB(100, 100, 255)
+mainStroke.Transparency = 0.3
+
+local gradient = Instance.new("UIGradient", Frame)
+gradient.Color = ColorSequence.new{
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(35, 35, 55)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(20, 20, 35))
+}
+gradient.Rotation = 45
+gradient.Transparency = NumberSequence.new{
+    NumberSequenceKeypoint.new(0, 0.1),
+    NumberSequenceKeypoint.new(1, 0.2)
+}
+
+local TitleBar = Instance.new("Frame", Frame)
+TitleBar.Size = UDim2.new(1, 0, 0, 40)
+TitleBar.Position = UDim2.new(0, 0, 0, 0)
+TitleBar.BackgroundColor3 = Color3.fromRGB(100, 100, 255)
+TitleBar.BackgroundTransparency = 0.2
+TitleBar.BorderSizePixel = 0
+
+local titleCorner = Instance.new("UICorner", TitleBar)
+titleCorner.CornerRadius = UDim.new(0, 12)
+
+local titleGradient = Instance.new("UIGradient", TitleBar)
+titleGradient.Color = ColorSequence.new{
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(120, 120, 255)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(80, 80, 200))
+}
+titleGradient.Rotation = 90
+titleGradient.Transparency = NumberSequence.new{
+    NumberSequenceKeypoint.new(0, 0.1),
+    NumberSequenceKeypoint.new(1, 0.3)
+}
+
+local Title = Instance.new("TextLabel", TitleBar)
+Title.Size = UDim2.new(1, -10, 1, 0)
+Title.Position = UDim2.new(0, 5, 0, 0)
+Title.Text = "Universal Aimbot | Stick Lock"
+Title.BackgroundTransparency = 1
+Title.TextColor3 = Color3.new(1, 1, 1)
+Title.Font = Enum.Font.GothamBold
+Title.TextSize = 16
+Title.TextXAlignment = Enum.TextXAlignment.Left
+
+local ContentFrame = Instance.new("Frame", Frame)
+ContentFrame.Size = UDim2.new(1, -10, 1, -50)
+ContentFrame.Position = UDim2.new(0, 5, 0, 45)
+ContentFrame.BackgroundTransparency = 1
+
+local contentPadding = Instance.new("UIPadding", ContentFrame)
+contentPadding.PaddingTop = UDim.new(0, 5)
+contentPadding.PaddingBottom = UDim.new(0, 5)
+contentPadding.PaddingLeft = UDim.new(0, 5)
+contentPadding.PaddingRight = UDim.new(0, 5)
+
+local function makeButton(text, yOffset, callback, enabledState)
+    local button = Instance.new("TextButton", ContentFrame)
+    button.Size = UDim2.new(1, -10, 0, 35)
+    button.Position = UDim2.new(0, 0, 0, yOffset)
+    button.BackgroundColor3 = enabledState() and Color3.fromRGB(0, 150, 0) or Color3.fromRGB(150, 0, 0)
+    button.TextColor3 = Color3.new(1, 1, 1)
+    button.Text = text
+    button.Font = Enum.Font.Gotham
+    button.TextSize = 14
+    button.ZIndex = 2
+    button.TextXAlignment = Enum.TextXAlignment.Left
+    
+    local buttonCorner = Instance.new("UICorner", button)
+    buttonCorner.CornerRadius = UDim.new(0, 8)
+    
+    local buttonStroke = Instance.new("UIStroke", button)
+    buttonStroke.Thickness = 1
+    buttonStroke.Color = Color3.fromRGB(255, 255, 255)
+    buttonStroke.Transparency = 0.5
+    
+    local buttonGradient = Instance.new("UIGradient", button)
+    buttonGradient.Color = ColorSequence.new{
+        ColorSequenceKeypoint.new(0, enabledState() and Color3.fromRGB(0, 170, 0) or Color3.fromRGB(170, 0, 0)),
+        ColorSequenceKeypoint.new(1, enabledState() and Color3.fromRGB(0, 120, 0) or Color3.fromRGB(120, 0, 0))
+    }
+    buttonGradient.Rotation = 90
+    buttonGradient.Transparency = NumberSequence.new{
+        NumberSequenceKeypoint.new(0, 0.1),
+        NumberSequenceKeypoint.new(1, 0.2)
+    }
+    
+    local buttonPadding = Instance.new("UIPadding", button)
+    buttonPadding.PaddingLeft = UDim.new(0, 10)
+    buttonPadding.PaddingRight = UDim.new(0, 10)
+    
+    local function updateColor()
+        local isEnabled = enabledState()
+        button.BackgroundColor3 = isEnabled and Color3.fromRGB(0, 150, 0) or Color3.fromRGB(150, 0, 0)
+        buttonGradient.Color = ColorSequence.new{
+            ColorSequenceKeypoint.new(0, isEnabled and Color3.fromRGB(0, 170, 0) or Color3.fromRGB(170, 0, 0)),
+            ColorSequenceKeypoint.new(1, isEnabled and Color3.fromRGB(0, 120, 0) or Color3.fromRGB(120, 0, 0))
+        }
+    end
+    
+    button.MouseButton1Click:Connect(function()
+        callback()
+        updateColor()
+    end)
+    
+    button.MouseEnter:Connect(function()
+        buttonStroke.Transparency = 0
+    end)
+    
+    button.MouseLeave:Connect(function()
+        buttonStroke.Transparency = 0.5
+    end)
+    
+    return button, updateColor
+end
+
+local aimbotButton, updateAimbotColor = makeButton("🎯 Aimbot (Hold RightClick)", 0, function() aimingEnabled = not aimingEnabled end, function() return aimingEnabled end)
+local espButton, updateESPColor = makeButton("👁️ ESP", 40, function() espEnabled = not espEnabled end, function() return espEnabled end)
+local noclipButton, updateNoclipColor = makeButton("👻 Noclip", 80, function() 
+    toggleNoclip(not noclip) 
+end, function() return noclip end)
+local walkspeedButton, updateWalkspeedColor = makeButton("🚀 Walkspeed (35)", 120, function()
+    walkspeedEnabled = not walkspeedEnabled
+    toggleWalkspeed(walkspeedEnabled)
+end, function() return walkspeedEnabled end)
+local infJumpButton, updateInfJumpColor = makeButton("🦘 Infinite Jump", 160, function() infJumpEnabled = not infJumpEnabled end, function() return infJumpEnabled end)
+local autoClickButton, updateAutoClickColor = makeButton("🔫 AutoClick (Hold Ctrl)", 200, function()
+    autoClickEnabled = not autoClickEnabled
+    toggleAutoClick(autoClickEnabled)
+end, function() return autoClickEnabled end)
+local opKillerButton, updateOPKillerColor = makeButton("⚔️ OPKiller", 240, function()
+    opKillerEnabled = not opKillerEnabled
+    if opKillerEnabled then startOPKiller() else stopOPKiller() end
+end, function() return opKillerEnabled end)
+local teamCheckButton, updateTeamCheckColor = makeButton("👥 Team Check (Include Teammates)", 280, function() teamCheckEnabled = not teamCheckEnabled end, function() return teamCheckEnabled end)
+local wallCheckButton, updateWallCheckColor = makeButton("🧱 Wall Check", 320, function() wallCheckEnabled = not wallCheckEnabled end, function() return wallCheckEnabled end)
+
+updateAimbotColor()
+updateESPColor()
+updateNoclipColor()
+updateWalkspeedColor()
+updateInfJumpColor()
+updateAutoClickColor()
+updateOPKillerColor()
+updateTeamCheckColor()
+updateWallCheckColor()
+
+local TweenService = game:GetService("TweenService")
+local entranceTween = TweenService:Create(Frame, TweenInfo.new(0.5, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+    BackgroundTransparency = 0.1,
+    Size = UDim2.new(0, 240, 0, 420)
+})
+entranceTween:Play()
