@@ -1,12 +1,29 @@
 local Lighting = game:GetService("Lighting")
 local RunService = game:GetService("RunService")
 
-local function updateLighting()
+local function applyFullbrightNoFog()
     Lighting.Brightness = 2
     Lighting.ClockTime = 14
     Lighting.FogEnd = 9e9
+    Lighting.FogStart = 0
     Lighting.GlobalShadows = false
     Lighting.OutdoorAmbient = Color3.fromRGB(128, 128, 128)
+    Lighting.Ambient = Color3.fromRGB(128, 128, 128)
+
+    for _, obj in pairs(Lighting:GetChildren()) do
+        if obj:IsA("Atmosphere") then
+            obj.Density = 0
+            obj.Haze = 0
+        elseif obj:IsA("BloomEffect") or obj:IsA("BlurEffect") or obj:IsA("DepthOfFieldEffect") or obj:IsA("SunRaysEffect") then
+            obj.Enabled = false
+        end
+    end
+
+    local workspaceAtmosphere = game:GetService("Workspace"):FindFirstChildOfClass("Atmosphere")
+    if workspaceAtmosphere then
+        workspaceAtmosphere.Density = 0
+        workspaceAtmosphere.Haze = 0
+    end
 end
 
-RunService.RenderStepped:Connect(updateLighting)
+RunService.RenderStepped:Connect(applyFullbrightNoFog)
