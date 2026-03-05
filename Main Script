@@ -76,6 +76,33 @@ Tabs.Main:AddButton({
     end
 })
 
+Tabs.Settings:AddDropdown("ThemeDropdown", {
+    Title = "Theme",
+    Description = "Changes the UI Theme",
+    Values = {"Dark", "Light", "Rose", "Aqua", "Amethyst"},
+    Default = "Dark",
+    Callback = function(Value)
+        Window:SetTheme(Value)
+    end
+})
+
+Tabs.Settings:AddToggle("AcrylicToggle", {
+    Title = "Acrylic",
+    Description = "The blurred background effect",
+    Default = true,
+    Callback = function(Value)
+        Window:SetAcrylic(Value)
+    end
+})
+
+Tabs.Settings:AddButton({
+    Title = "Destroy UI",
+    Description = "Completely closes the script hub",
+    Callback = function()
+        Window:Destroy()
+    end
+})
+
 Window:SelectTab(1)
 
 Fluent:Notify({
