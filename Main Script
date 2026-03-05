@@ -11,13 +11,12 @@ local Window = Fluent:CreateWindow({
 })
 
 local Tabs = {
-    Main = Window:AddTab({ Title = "Skripts", Icon = "code" }),
-    Settings = Window:AddTab({ Title = "Settings", Icon = "settings" })
+    Main = Window:AddTab({ Title = "Scripts", Icon = "code" })
 }
 
 Tabs.Main:AddParagraph({
     Title = "Kev's Scripts",
-    Content = "Scripts for kev cuz hes not good at executing"
+    Content = "heehaw - Premium script collection"
 })
 
 Tabs.Main:AddButton({
@@ -73,33 +72,6 @@ Tabs.Main:AddButton({
     Description = "It makes the interact thing have no cooldown and instant",
     Callback = function()
         loadstring(game:HttpGet("https://raw.githubusercontent.com/gallardokhali-creator/Kevs-Tools/refs/heads/main/Instant%20Interact"))()
-    end
-})
-
-Tabs.Settings:AddDropdown("ThemeDropdown", {
-    Title = "Theme",
-    Description = "Changes the UI Theme",
-    Values = {"Dark", "Light", "Rose", "Aqua", "Amethyst"},
-    Default = "Dark",
-    Callback = function(Value)
-        Window:SetTheme(Value)
-    end
-})
-
-Tabs.Settings:AddToggle("AcrylicToggle", {
-    Title = "Acrylic",
-    Description = "The blurred background effect",
-    Default = true,
-    Callback = function(Value)
-        Window:SetAcrylic(Value)
-    end
-})
-
-Tabs.Settings:AddButton({
-    Title = "Destroy UI",
-    Description = "Completely closes the script hub",
-    Callback = function()
-        Window:Destroy()
     end
 })
 
