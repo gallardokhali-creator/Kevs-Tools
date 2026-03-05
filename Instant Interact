@@ -1,0 +1,15 @@
+local function makeInstant(prompt)
+    if prompt:IsA("ProximityPrompt") then
+        prompt.HoldDuration = 0
+    end
+end
+
+for _, prompt in ipairs(game:GetDescendants()) do
+    makeInstant(prompt)
+end
+
+game.DescendantAdded:Connect(function(obj)
+    makeInstant(obj)
+end)
+
+game:GetService("ProximityPromptService").PromptShown:Connect(makeInstant)
