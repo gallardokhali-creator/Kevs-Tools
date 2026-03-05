@@ -1,0 +1,44 @@
+local Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
+
+local Window = Fluent:CreateWindow({
+    Title = "Kev Hub | Authorization",
+    SubTitle = "by 707",
+    TabWidth = 160,
+    Size = UDim2.fromOffset(400, 300),
+    Acrylic = true,
+    Theme = "Dark",
+    MinimizeKey = Enum.KeyCode.LeftControl
+})
+
+local Tabs = {
+    Auth = Window:AddTab({ Title = "Key System", Icon = "key" })
+}
+
+Tabs.Auth:AddInput("KeyInput", {
+    Title = "Enter Key",
+    Description = "Enter the correct key to load the Scripthub",
+    Default = "",
+    Placeholder = "Key here...",
+    Numeric = false,
+    Finished = true,
+    Callback = function(Value)
+        if Value == "kev" then
+            Fluent:Notify({
+                Title = "Success",
+                Content = "Correct key! Loading Scripthub...",
+                Duration = 3
+            })
+            task.wait(1)
+            Window:Destroy()
+            loadstring(game:HttpGet("https://raw.githubusercontent.com/gallardokhali-creator/Kevs-Tools/refs/heads/main/Main%20Scripthub"))()
+        else
+            Fluent:Notify({
+                Title = "Error",
+                Content = "Incorrect key. Try again.",
+                Duration = 3
+            })
+        end
+    end
+})
+
+Window:SelectTab(1)
