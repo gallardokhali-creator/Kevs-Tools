@@ -1,66 +1,85 @@
-local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+local Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
 
-local Window = Rayfield:CreateWindow({
-    Name = "Kev ScriptHub",
-    LoadingTitle = "Kev's Scripthub Loading...",
-    LoadingSubtitle = "by 707",
-    ConfigurationSaving = {
-        Enabled = false
-    },
-    Discord = {
-        Enabled = false
-    },
-    KeySystem = false
+local Window = Fluent:CreateWindow({
+    Title = "Kev ScriptHub",
+    SubTitle = "by 707",
+    TabWidth = 160,
+    Size = UDim2.fromOffset(580, 460),
+    Acrylic = true,
+    Theme = "Dark",
+    MinimizeKey = Enum.KeyCode.LeftControl
 })
 
-local MainTab = Window:CreateTab("Skripts", 4483362458)
-local MainSection = MainTab:CreateSection("Kev's Scripts heehaw")
+local Tabs = {
+    Main = Window:AddTab({ Title = "Skripts", Icon = "code" }),
+    Settings = Window:AddTab({ Title = "Settings", Icon = "settings" })
+}
 
-MainTab:CreateButton({
-    Name = "Aimbot [The aim key is E]",
+Tabs.Main:AddParagraph({
+    Title = "Kev's Scripts",
+    Content = "heehaw - Premium script collection"
+})
+
+Tabs.Main:AddButton({
+    Title = "Aimbot [AimKey: E]",
+    Description = "Aimbot",
     Callback = function()
         loadstring(game:HttpGet("https://raw.githubusercontent.com/gallardokhali-creator/Kevs-Tools/refs/heads/main/Aimbot%20E"))()
-    end,
+    end
 })
 
-MainTab:CreateButton({
-    Name = "Aimbot [The aim key is RIGHTCLICK]",
+Tabs.Main:AddButton({
+    Title = "Aimbot [AimKey: RIGHTCLICK]",
+    Description = "Aimbot",
     Callback = function()
         loadstring(game:HttpGet("https://raw.githubusercontent.com/gallardokhali-creator/Kevs-Tools/refs/heads/main/Aimbot%20Rightlcick"))()
-    end,
+    end
 })
 
-MainTab:CreateButton({
-    Name = "Head Hitbox [Makes people head hitbox bigger]",
+Tabs.Main:AddButton({
+    Title = "Head Hitbox",
+    Description = "Increase player hitbox making your bullets always hit",
     Callback = function()
         loadstring(game:HttpGet("https://raw.githubusercontent.com/gallardokhali-creator/Kevs-Tools/refs/heads/main/Headhitbox"))()
-    end,
+    end
 })
 
-MainTab:CreateButton({
-    Name = "Fullbright & Nofog",
+Tabs.Main:AddButton({
+    Title = "Fullbright & Nofog",
+    Description = "It removes the fog and enables fullbright",
     Callback = function()
         loadstring(game:HttpGet("https://raw.githubusercontent.com/gallardokhali-creator/Kevs-Tools/refs/heads/main/Nofog%20%26%20Fullbright"))()
-    end,
+    end
 })
 
-MainTab:CreateButton({
-    Name = "Infinity Yield [Admin Commands]",
+Tabs.Main:AddButton({
+    Title = "Infinity Yield",
+    Description = "Admin Commands",
     Callback = function()
         loadstring(game:HttpGet('https://raw.githubusercontent.com/EdgeIY/infiniteyield/master/source'))()
-    end,
+    end
 })
 
-MainTab:CreateButton({
-    Name = "Waypoints",
+Tabs.Main:AddButton({
+    Title = "Waypoints",
+    Description = "Its a waypoint marker system so you can see where your stuff is",
     Callback = function()
         loadstring(game:HttpGet("https://raw.githubusercontent.com/gallardokhali-creator/Waypoints/refs/heads/main/Script"))()
-    end,
+    end
 })
 
-Rayfield:Notify({
+Tabs.Main:AddButton({
+    Title = "Instant Interact [Might lag]",
+    Description = "It makes the interact thing have no cooldown and instant",
+    Callback = function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/gallardokhali-creator/Kevs-Tools/refs/heads/main/Instant%20Interact"))()
+    end
+})
+
+Window:SelectTab(1)
+
+Fluent:Notify({
     Title = "Kev ScriptHub",
-    Content = "All scripts loaded!",
-    Duration = 5,
-    Image = 4483362458,
+    Content = "Main Menu Loaded!",
+    Duration = 5
 })
