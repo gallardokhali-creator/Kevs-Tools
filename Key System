@@ -16,7 +16,7 @@ local Tabs = {
 
 Tabs.Auth:AddInput("KeyInput", {
     Title = "Enter Key",
-    Description = "Enter Key",
+    Description = "Enter your key",
     Default = "",
     Placeholder = "Key here...",
     Numeric = false,
