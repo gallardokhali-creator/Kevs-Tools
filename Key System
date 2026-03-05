@@ -30,7 +30,7 @@ Tabs.Auth:AddInput("KeyInput", {
             })
             task.wait(1)
             Window:Destroy()
-            loadstring(game:HttpGet("https://raw.githubusercontent.com/gallardokhali-creator/Kevs-Tools/refs/heads/main/Main%20Scripthub"))()
+            loadstring(game:HttpGet("https://raw.githubusercontent.com/gallardokhali-creator/Kevs-Tools/refs/heads/main/Main%20Script"))()
         else
             Fluent:Notify({
                 Title = "Error",
